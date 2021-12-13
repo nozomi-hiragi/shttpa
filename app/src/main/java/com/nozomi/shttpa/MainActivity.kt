@@ -9,8 +9,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.nozomi.shttpa.ui.theme.ShttpaTheme
+import java.io.IOException
 
 class MainActivity : ComponentActivity() {
+    private var webServer: WebServer? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -21,6 +24,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        this.webServer = WebServer(applicationContext, 8888)
+        try {
+            this.webServer?.start()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        this.webServer?.stop()
     }
 }
 
