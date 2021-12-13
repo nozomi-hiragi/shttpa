@@ -1,14 +1,54 @@
 package com.nozomi.shttpa
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 
 class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
 
     override fun serve(session: IHTTPSession): Response {
+        val ct = ContentType(session.headers["content-type"]).tryUTF8()
+        session.headers["content-type"] = ct.contentTypeHeader
+
+        if (session.method == Method.POST) {
+            val name = "file"
+            val body = mutableMapOf<String, String>()
+            session.parseBody(body)
+            val filePath = body[name]
+
+            if (filePath != null) {
+                val file = File(filePath)
+                val data = file.readBytes()
+                val filename = session.parameters[name]?.first() ?: "UnknownName"
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val epUri = MediaStore.Downloads.getContentUri(
+                        MediaStore.VOLUME_EXTERNAL_PRIMARY
+                    )
+                    val values = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, filename)
+                    }
+                    val contentUri = context.contentResolver.insert(epUri, values)
+
+                    context.contentResolver.openFileDescriptor(contentUri!!, "w", null).use {
+                        FileOutputStream(it!!.fileDescriptor).use { output ->
+                            output.write(data)
+                        }
+                    }
+                    values.clear()
+                    values.put(MediaStore.Downloads.IS_PENDING, 0)
+                    context.contentResolver.update(contentUri, values, null, null)
+                }
+            }
+        }
+
         try {
             var uri = session.uri
             if ("/" == uri) {
