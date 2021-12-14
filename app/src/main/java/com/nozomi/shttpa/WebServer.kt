@@ -70,24 +70,27 @@ class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
                 Log.d("WebServer", "File open failed")
             }
 
-            if (uri.endsWith(".ico")) {
+            if (filename.endsWith(".ico")) {
                 return newChunkedResponse(Response.Status.OK, "image/x-icon", file)
-            } else if (uri.endsWith(".png") || uri.endsWith(".PNG")) {
+            } else if (filename.endsWith(".png") || filename.endsWith(".PNG")) {
                 return newChunkedResponse(Response.Status.OK, "image/png", file)
-            } else if (uri.endsWith(".jpg") || uri.endsWith(".JPG")
-                || uri.endsWith(".jpeg") || uri.endsWith(".JPEG")
+            } else if (filename.endsWith(".jpg") || filename.endsWith(".JPG")
+                || filename.endsWith(".jpeg") || filename.endsWith(".JPEG")
             ) {
                 return newChunkedResponse(Response.Status.OK, "image/jpeg", file)
-            } else if (uri.endsWith(".js")) {
+            } else if (filename.endsWith(".js")) {
                 return newChunkedResponse(Response.Status.OK, "application/javascript", file)
-            } else if (uri.endsWith(".css")) {
+            } else if (filename.endsWith(".css")) {
                 return newChunkedResponse(Response.Status.OK, "text/css", file)
-            } else if (uri.endsWith(".html") || uri.endsWith(".htm")) {
+            } else if (filename.endsWith(".html") || filename.endsWith(".htm")) {
+                Log.d("WebServer", "html")
                 return newChunkedResponse(Response.Status.OK, "text/html", file)
-            } else if (uri.endsWith(".map")) {
+            } else if (filename.endsWith(".map")) {
                 return newChunkedResponse(Response.Status.OK, "application/json", file)
+            } else if (filename.endsWith(".svg")) {
+                return newChunkedResponse(Response.Status.OK, "image/svg+xml", file)
             } else {
-                return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", uri)
+                return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", filename)
             }
         } catch (ioe: IOException) {
             ioe.printStackTrace()
