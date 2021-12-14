@@ -1,8 +1,8 @@
 package com.nozomi.shttpa
 
+import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
-import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
@@ -24,40 +24,41 @@ class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
             val filePath = body[name]
 
             if (filePath != null) {
-                val file = File(filePath)
-                val data = file.readBytes()
                 val filename = session.parameters[name]?.first() ?: "UnknownName"
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val epUri = MediaStore.Downloads.getContentUri(
-                        MediaStore.VOLUME_EXTERNAL_PRIMARY
-                    )
-                    val values = ContentValues().apply {
-                        put(MediaStore.Downloads.DISPLAY_NAME, filename)
-                    }
-                    val contentUri = context.contentResolver.insert(epUri, values)
-
-                    context.contentResolver.openFileDescriptor(contentUri!!, "w", null).use {
-                        FileOutputStream(it!!.fileDescriptor).use { output ->
-                            output.write(data)
-                        }
-                    }
-                    values.clear()
-                    values.put(MediaStore.Downloads.IS_PENDING, 0)
-                    context.contentResolver.update(contentUri, values, null, null)
-                }
+                val data = File(filePath).readBytes()
+                saveToDownloadFolder(filename, data)
             }
         }
 
-        try {
-            var uri = session.uri
-            if ("/" == uri) {
-                uri = "index.html"
-            }
+        return responseFileFromAssets(session.uri)
+    }
 
+    @SuppressLint("InlinedApi")
+    private fun saveToDownloadFolder(filename: String, data: ByteArray) {
+        val epUri = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, filename)
+        }
+        val contentUri = context.contentResolver.insert(epUri, values)
+
+        context.contentResolver.openFileDescriptor(contentUri!!, "w", null).use {
+            FileOutputStream(it!!.fileDescriptor).use { output ->
+                output.write(data)
+            }
+        }
+        values.clear()
+        values.put(MediaStore.Downloads.IS_PENDING, 0)
+        context.contentResolver.update(contentUri, values, null, null)
+    }
+
+    private fun responseFileFromAssets(uri: String): Response {
+        try {
             var filename = uri
-            if (uri.substring(0, 1) == "/") {
-                filename = filename.substring(1)
+
+            if ("/" == uri) {
+                filename = "index.html"
+            } else if (uri.substring(0, 1) == "/") {
+                filename = uri.substring(1)
             }
             Log.d("WebServer", filename)
 
