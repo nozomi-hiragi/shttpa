@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import FormControl from '@mui/material/FormControl';
 import './App.css';
 import { Button, Card, CardActions, CardContent, Grid, Typography } from '@mui/material';
+import { get } from 'http';
 function App() {
   const [filename, setFilename] = useState("No selected");
+  const [downloadFilename, setDownloadFilename] = useState("");
 
   const onChangeSelectFile = (a: React.ChangeEvent<HTMLInputElement>) => {
     if (a.target.files?.length ?? 0 >= 1) {
@@ -47,6 +49,38 @@ function App() {
             </CardActions>
           </Card>
         </FormControl>
+      </Grid>
+      <Grid item xs={10} sm="auto">
+        <Card sx={{ width: { xs: "100%", sm: 534 } }}>
+          <CardContent>
+            <Grid
+              container
+              direction="row"
+              justifyContent="center"
+              alignItems="center"
+              spacing={2}
+            >
+              <Grid item xs={6} sm={8}>
+                <Typography variant="body1">{downloadFilename}</Typography>
+              </Grid>
+              <Grid item xs="auto" sm={4}>
+                <Button component="label" sx={{ my: 2 }} onClick={() => {
+                  get("/export-file-state", (res) => {
+                    res.setEncoding('utf8');
+                    res.on("data", (chunk) => {
+                      if (chunk !== "none") setDownloadFilename(chunk);
+                    });
+                  })
+                }}>
+                  Check file
+                </Button>
+              </Grid>
+            </Grid>
+          </CardContent>
+          <CardActions>
+            <Button size="small" component="a" href="/download" download={downloadFilename} disabled={downloadFilename === ""}>Recieve</Button>
+          </CardActions>
+        </Card>
       </Grid>
     </Grid >
   );
