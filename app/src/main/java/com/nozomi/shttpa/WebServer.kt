@@ -30,7 +30,7 @@ class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
             }
         }
 
-        return responseFileFromAssets(session.uri)
+        return responseFileFromReactSiteAssets(session.uri)
     }
 
     @SuppressLint("InlinedApi")
@@ -51,7 +51,7 @@ class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
         context.contentResolver.update(contentUri, values, null, null)
     }
 
-    private fun responseFileFromAssets(uri: String): Response {
+    private fun responseFileFromReactSiteAssets(uri: String): Response {
         try {
             var filename = uri
 
@@ -60,6 +60,7 @@ class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
             } else if (uri.substring(0, 1) == "/") {
                 filename = uri.substring(1)
             }
+            filename = "react-site/$filename"
             Log.d("WebServer", filename)
 
             val assets = context.resources.assets
