@@ -6,12 +6,11 @@ import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
+import java.io.*
 
 class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
+    var exportFileName: String? = null
+    var exportFileData: ByteArray? = null
 
     override fun serve(session: IHTTPSession): Response {
         val ct = ContentType(session.headers["content-type"]).tryUTF8()
@@ -28,6 +27,13 @@ class WebServer(private val context: Context, port: Int) : NanoHTTPD(port) {
                 val data = File(filePath).readBytes()
                 saveToDownloadFolder(filename, data)
             }
+        }
+
+        if (session.uri == "/export-file-state") {
+            return newFixedLengthResponse(exportFileName ?: "none")
+        } else if (session.uri == "/download" && exportFileData != null) {
+            val ist = ByteArrayInputStream(exportFileData)
+            return newChunkedResponse(Response.Status.OK, "*/*", ist)
         }
 
         return responseFileFromReactSiteAssets(session.uri)
